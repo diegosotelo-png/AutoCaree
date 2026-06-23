@@ -1,5 +1,11 @@
 package com.auto_care_test.ui.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -13,6 +19,36 @@ import com.auto_care_test.ui.resumen.ResumenScreen
 import com.auto_care_test.ui.vehiculo.VehiculosScreen
 import com.auto_care_test.viewmodel.MantenimientoViewModel
 import com.auto_care_test.viewmodel.VehiculoViewModel
+
+private const val ANIM_DURATION = 280
+
+private val enterTransition: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
+    slideIntoContainer(
+        AnimatedContentTransitionScope.SlideDirection.Start,
+        animationSpec = tween(ANIM_DURATION)
+    ) + fadeIn(animationSpec = tween(ANIM_DURATION))
+}
+
+private val exitTransition: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
+    slideOutOfContainer(
+        AnimatedContentTransitionScope.SlideDirection.Start,
+        animationSpec = tween(ANIM_DURATION)
+    ) + fadeOut(animationSpec = tween(ANIM_DURATION))
+}
+
+private val popEnterTransition: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
+    slideIntoContainer(
+        AnimatedContentTransitionScope.SlideDirection.End,
+        animationSpec = tween(ANIM_DURATION)
+    ) + fadeIn(animationSpec = tween(ANIM_DURATION))
+}
+
+private val popExitTransition: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
+    slideOutOfContainer(
+        AnimatedContentTransitionScope.SlideDirection.End,
+        animationSpec = tween(ANIM_DURATION)
+    ) + fadeOut(animationSpec = tween(ANIM_DURATION))
+}
 
 sealed class Screen(val route: String) {
     object Lista : Screen("lista")
@@ -34,11 +70,16 @@ fun NavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Lista.route
+        startDestination = Screen.Lista.route,
+        enterTransition = enterTransition,
+        exitTransition = exitTransition,
+        popEnterTransition = popEnterTransition,
+        popExitTransition = popExitTransition
     ) {
         composable(Screen.Lista.route) {
             ListaScreen(
                 viewModel = mantenimientoViewModel,
+                vehiculoViewModel = vehiculoViewModel,
                 onNavigateToDetalle = { id -> navController.navigate(Screen.Detalle.createRoute(id)) },
                 onNavigateToFormulario = { id -> navController.navigate(Screen.Formulario.createRoute(id)) },
                 onNavigateToVehiculos = { navController.navigate(Screen.Vehiculos.route) },

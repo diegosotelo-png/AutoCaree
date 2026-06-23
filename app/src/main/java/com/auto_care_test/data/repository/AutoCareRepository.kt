@@ -34,7 +34,6 @@ class AutoCareRepository(
         return vehiculoDao.getById(id)?.toDomain()
     }
 
-    // --- Mantenimientos ---
     val allMantenimientos: Flow<List<Mantenimiento>> = mantenimientoDao.getAll().map { entities ->
         entities.map { it.toDomain() }
     }
@@ -61,7 +60,6 @@ class AutoCareRepository(
         }
     }
 
-    // --- API Externa ---
     suspend fun obtenerDatosTecnicos(marca: String, modelo: String): String {
         val makeParam  = marca.trim().lowercase()
         val modelParam = modelo.trim().lowercase()
@@ -94,7 +92,6 @@ class AutoCareRepository(
         }
     }
 
-    // --- Mappers ---
     private fun VehiculoEntity.toDomain() = Vehiculo(idVehiculo, marca, modelo, placa, tipoVehiculo)
     private fun Vehiculo.toEntity() = VehiculoEntity(idVehiculo, marca, modelo, placa, tipoVehiculo)
 

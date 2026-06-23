@@ -1,188 +1,408 @@
 package com.auto_care_test.ui.mantenimiento
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.auto_care_test.domain.model.Mantenimiento
+import com.auto_care_test.ui.common.HeaderGradient
 import com.auto_care_test.ui.common.StatusChip
 import com.auto_care_test.ui.common.estadoColor
 import com.auto_care_test.ui.common.formatFecha
+import com.auto_care_test.ui.common.ShimmerBox
+import com.auto_care_test.ui.common.iconoTipoMantenimiento
+import com.auto_care_test.ui.common.pressScale
 import com.auto_care_test.viewmodel.MantenimientoViewModel
+import com.auto_care_test.viewmodel.VehiculoViewModel
+import java.time.LocalTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListaScreen(
     viewModel: MantenimientoViewModel,
+    vehiculoViewModel: VehiculoViewModel,
     onNavigateToDetalle: (Int) -> Unit,
     onNavigateToFormulario: (Int?) -> Unit,
     onNavigateToVehiculos: () -> Unit,
     onNavigateToResumen: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val vehiculos by vehiculoViewModel.vehiculos.collectAsState()
     var filtro by remember { mutableStateOf("Todos") }
     val filtros = listOf("Todos", "Pendiente", "Realizado", "Vencido")
     val lista = if (filtro == "Todos") uiState.mantenimientos
                 else uiState.mantenimientos.filter { it.estado == filtro }
 
+    val pendientes = uiState.mantenimientos.count { it.estado == "Pendiente" }
+    val vencidos = uiState.mantenimientos.count { it.estado == "Vencido" }
+    val saludo = remember {
+        when (LocalTime.now().hour) {
+            in 5..11 -> "¡Buenos días!"
+            in 12..18 -> "¡Buenas tardes!"
+            else -> "¡Buenas noches!"
+        }
+    }
+
+    val haptics = LocalHapticFeedback.current
+    val fabInteraction = remember { MutableInteractionSource() }
+
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            "Auto Care",
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                        Text(
-                            "${uiState.mantenimientos.size} mantenimientos registrados",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f)
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onNavigateToVehiculos) {
-                        Icon(Icons.Default.DirectionsCar, contentDescription = "Vehículos")
-                    }
-                    IconButton(onClick = onNavigateToResumen) {
-                        Icon(Icons.Default.BarChart, contentDescription = "Resumen")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
-        },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { onNavigateToFormulario(null) },
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onNavigateToFormulario(null)
+                },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Nuevo", fontWeight = FontWeight.SemiBold) },
+                shape = RoundedCornerShape(20.dp),
                 containerColor = MaterialTheme.colorScheme.secondary,
-                contentColor = MaterialTheme.colorScheme.onSecondary
+                contentColor = MaterialTheme.colorScheme.onSecondary,
+                interactionSource = fabInteraction,
+                modifier = Modifier.pressScale(fabInteraction)
             )
         }
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .padding(padding)
-                .fillMaxSize()
+                .fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 96.dp)
         ) {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(filtros) { f ->
-                    FilterChip(
-                        selected = filtro == f,
-                        onClick = { filtro = f },
-                        label = { Text(f) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+            // Hero de bienvenida
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(HeaderGradient)
+                        .padding(20.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    saludo,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                                )
+                                Text(
+                                    "Tu Auto Care",
+                                    style = MaterialTheme.typography.displaySmall,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                                Text(
+                                    "${uiState.mantenimientos.size} mantenimientos registrados",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.TrendingUp,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            HeroPill(Icons.Default.Schedule, "$pendientes pendientes")
+                            HeroPill(Icons.Default.Warning, "$vencidos vencidos")
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            QuickActionCard(
+                                modifier = Modifier.weight(1f),
+                                icon = Icons.Default.DirectionsCar,
+                                label = "Tus Vehículos",
+                                subtitle = "${vehiculos.size} registrados",
+                                onClick = onNavigateToVehiculos
+                            )
+                            QuickActionCard(
+                                modifier = Modifier.weight(1f),
+                                icon = Icons.Default.BarChart,
+                                label = "Tu Resumen",
+                                onClick = onNavigateToResumen
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
+                Text(
+                    "Tus Mantenimientos",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp)
+                )
+            }
+
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(filtros) { f ->
+                        FilterChip(
+                            selected = filtro == f,
+                            onClick = { filtro = f },
+                            label = { Text(f, fontWeight = FontWeight.Medium) },
+                            shape = RoundedCornerShape(50),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                            )
                         )
-                    )
+                    }
                 }
             }
 
             when {
-                uiState.isLoading -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator() }
-
-                lista.isEmpty() -> EmptyListState()
-
-                else -> LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(lista, key = { it.idMantenimiento }) { m ->
-                        MantenimientoListCard(m) { onNavigateToDetalle(m.idMantenimiento) }
+                uiState.isLoading -> items(3) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 5.dp)
+                            .height(86.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ShimmerBox(modifier = Modifier.fillMaxWidth(0.6f).height(16.dp))
+                        ShimmerBox(modifier = Modifier.fillMaxWidth(0.4f).height(12.dp))
                     }
-                    item { Spacer(Modifier.height(88.dp)) }
+                }
+
+                lista.isEmpty() -> item { EmptyListState() }
+
+                else -> itemsIndexed(lista, key = { _, m -> m.idMantenimiento }) { index, m ->
+                    var visible by remember { mutableStateOf(false) }
+                    LaunchedEffect(Unit) { visible = true }
+                    AnimatedVisibility(
+                        visible = visible,
+                        enter = fadeIn(tween(250, delayMillis = index * 40)) +
+                            slideInVertically(
+                                animationSpec = tween(250, delayMillis = index * 40),
+                                initialOffsetY = { it / 4 }
+                            )
+                    ) {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 5.dp)) {
+                            val vehiculo = vehiculos.find { it.idVehiculo == m.idVehiculo }
+                            MantenimientoListCard(
+                                m = m,
+                                vehiculoTexto = vehiculo?.let { "${it.marca} ${it.modelo}" },
+                                onClick = { onNavigateToDetalle(m.idMantenimiento) }
+                            )
+                        }
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun HeroPill(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.16f))
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onPrimary)
+        Text(text, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimary)
+    }
+}
+
+@Composable
+private fun QuickActionCard(
+    modifier: Modifier = Modifier,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    subtitle: String? = null,
+    onClick: () -> Unit
+) {
+    val haptics = LocalHapticFeedback.current
+    val interaction = remember { MutableInteractionSource() }
+    Card(
+        onClick = {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            onClick()
+        },
+        modifier = modifier.pressScale(interaction),
+        interactionSource = interaction,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.14f))
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 14.dp, vertical = 12.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+                if (subtitle != null) {
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f)
+                    )
+                }
+            }
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForwardIos,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+                modifier = Modifier.size(13.dp)
+            )
         }
     }
 }
 
 @Composable
 private fun EmptyListState() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp),
+        contentAlignment = Alignment.Center
+    ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.Build,
-                contentDescription = null,
-                modifier = Modifier.size(72.dp),
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-            )
+            Box(
+                modifier = Modifier
+                    .size(88.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Build,
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
             Text(
                 "Sin mantenimientos",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             Text(
                 "Pulsa + para agregar el primero",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
             )
         }
     }
 }
 
 @Composable
-fun MantenimientoListCard(m: Mantenimiento, onClick: () -> Unit) {
+fun MantenimientoListCard(m: Mantenimiento, vehiculoTexto: String? = null, onClick: () -> Unit) {
     val statusColor = estadoColor(m.estado)
+    val haptics = LocalHapticFeedback.current
+    val interaction = remember { MutableInteractionSource() }
     Card(
+        onClick = {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            onClick()
+        },
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
+            .pressScale(interaction),
+        interactionSource = interaction,
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(IntrinsicSize.Min)
+                .padding(16.dp),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .width(4.dp)
-                    .fillMaxHeight()
-                    .background(
-                        color = statusColor,
-                        shape = RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp)
-                    )
-            )
-            Column(
-                modifier = Modifier
-                    .padding(14.dp)
-                    .weight(1f)
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(statusColor.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
             ) {
+                Icon(
+                    imageVector = iconoTipoMantenimiento(m.tipoMantenimiento),
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                    tint = statusColor
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -191,14 +411,34 @@ fun MantenimientoListCard(m: Mantenimiento, onClick: () -> Unit) {
                     Text(
                         text = m.titulo,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         modifier = Modifier
                             .weight(1f)
                             .padding(end = 8.dp)
                     )
                     StatusChip(m.estado)
                 }
-                Spacer(Modifier.height(6.dp))
+                if (!vehiculoTexto.isNullOrBlank()) {
+                    Spacer(Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DirectionsCar,
+                            contentDescription = null,
+                            modifier = Modifier.size(13.dp),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                        )
+                        Text(
+                            text = vehiculoTexto,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -222,7 +462,8 @@ fun MantenimientoListCard(m: Mantenimiento, onClick: () -> Unit) {
                     Text(
                         text = m.tipoMantenimiento,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+                        fontWeight = FontWeight.Medium,
+                        color = statusColor
                     )
                 }
             }

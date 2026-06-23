@@ -14,9 +14,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.auto_care_test.ui.common.HeaderGradient
 import com.auto_care_test.ui.common.StatusChip
 import com.auto_care_test.ui.common.estadoColor
 import com.auto_care_test.ui.common.formatFecha
@@ -38,31 +40,33 @@ fun DetalleScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Detalle", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onNavigateToEdit) {
-                        Icon(Icons.Default.Edit, "Editar")
-                    }
-                    IconButton(onClick = {
-                        viewModel.eliminarMantenimiento(idMantenimiento)
-                        onNavigateBack()
-                    }) {
-                        Icon(Icons.Default.Delete, "Eliminar", tint = MaterialTheme.colorScheme.error)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+            Box(modifier = Modifier.background(HeaderGradient)) {
+                TopAppBar(
+                    title = { Text("Detalle", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onNavigateToEdit) {
+                            Icon(Icons.Default.Edit, "Editar")
+                        }
+                        IconButton(onClick = {
+                            viewModel.eliminarMantenimiento(idMantenimiento)
+                            onNavigateBack()
+                        }) {
+                            Icon(Icons.Default.Delete, "Eliminar", tint = MaterialTheme.colorScheme.onPrimary)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                        actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 )
-            )
+            }
         }
     ) { padding ->
         when {
@@ -96,8 +100,9 @@ fun DetalleScreen(
                     // Header card
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
                         elevation = CardDefaults.cardElevation(3.dp)
                     ) {
                         Column(modifier = Modifier.padding(20.dp)) {
@@ -127,8 +132,9 @@ fun DetalleScreen(
                     uiState.vehiculoAsociado?.let { v ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(20.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
                             elevation = CardDefaults.cardElevation(2.dp)
                         ) {
                             Column(
@@ -152,8 +158,9 @@ fun DetalleScreen(
                     // Info card
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
                         elevation = CardDefaults.cardElevation(2.dp)
                     ) {
                         Column(
@@ -214,7 +221,7 @@ fun DetalleScreen(
                     // Technical API card
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer
                         ),

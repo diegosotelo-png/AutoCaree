@@ -1,5 +1,6 @@
 package com.auto_care_test.ui.mantenimiento
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,12 +12,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.auto_care_test.domain.model.Mantenimiento
 import com.auto_care_test.ui.common.estadoColor
 import com.auto_care_test.ui.common.estadoContainerColor
 import com.auto_care_test.ui.common.formatFecha
+import com.auto_care_test.ui.common.pressScale
 import com.auto_care_test.viewmodel.MantenimientoViewModel
 import com.auto_care_test.viewmodel.VehiculoViewModel
 import java.time.Instant
@@ -280,6 +284,8 @@ fun FormularioScreen(
                 }
             }
 
+            val guardarInteraction = remember { MutableInteractionSource() }
+            val haptics = LocalHapticFeedback.current
             Button(
                 onClick = {
                     if (idVehiculoSeleccionado != null) {
@@ -293,18 +299,21 @@ fun FormularioScreen(
                             estado = estado,
                             recordatorioActivo = recordatorioActivo
                         )
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         if (idMantenimiento == null) mantenimientoViewModel.guardarMantenimiento(m)
                         else mantenimientoViewModel.editarMantenimiento(m)
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(52.dp)
+                    .pressScale(guardarInteraction),
                 enabled = titulo.isNotBlank()
                         && idVehiculoSeleccionado != null
                         && fechaProgramada.isNotEmpty()
                         && tipoMantenimiento.isNotBlank(),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(16.dp),
+                interactionSource = guardarInteraction
             ) {
                 Text(
                     text = if (idMantenimiento == null) "Guardar mantenimiento" else "Actualizar mantenimiento",
@@ -322,8 +331,9 @@ fun FormularioScreen(
 private fun FormSection(title: String, content: @Composable () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
         elevation = CardDefaults.cardElevation(1.dp)
     ) {
         Column(

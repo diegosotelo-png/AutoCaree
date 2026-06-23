@@ -10,8 +10,7 @@ object RetrofitClient {
     private const val BASE_URL = "https://api.api-ninjas.com/v1/"
     private const val API_KEY = "PXGvpn6kv223tOMvp0w51IlqvdGoet5hxSkOqCyA"
 
-    // El plan gratuito devuelve "this field is for premium subscribers only" en campos numéricos.
-    // Estos adapters devuelven null en vez de crashear con NumberFormatException.
+
     private val gson = GsonBuilder()
         .registerTypeAdapter(Int::class.javaObjectType, JsonDeserializer<Int?> { json, _, _ ->
             runCatching { json.asInt }.getOrNull()

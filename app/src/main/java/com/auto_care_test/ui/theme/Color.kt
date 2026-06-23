@@ -2,23 +2,41 @@ package com.auto_care_test.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Dark scheme
-val Blue80 = Color(0xFF9ECAFF)
-val Amber80 = Color(0xFFFFD88C)
-val BlueGrey80 = Color(0xFFBBC8E0)
+// Futuristic neon-on-dark identity
+val NeonViolet = Color(0xFF7C5CFC)
+val NeonMagenta = Color(0xFFD946EF)
+val NeonCyan = Color(0xFF22D3EE)
+val NeonGreen = Color(0xFF34F5A3)
+val NeonCoral = Color(0xFFFF5577)
 
-// Light scheme
-val Blue40 = Color(0xFF1565C0)
-val Amber40 = Color(0xFFF57F17)
-val BlueGrey40 = Color(0xFF37474F)
+val DeepSpace = Color(0xFF0A0D1A)
+val SurfaceDark = Color(0xFF131A30)
+val SurfaceVariantDark = Color(0xFF1C2542)
+val OutlineDark = Color(0xFF333E66)
+val OnDark = Color(0xFFEAEBFA)
+val OnDarkMuted = Color(0xFFA8AFD6)
 
-val BackgroundLight = Color(0xFFF3F6FC)
+val Blue80 = NeonCyan
+val Amber80 = NeonGreen
+val BlueGrey80 = NeonViolet
 
-// Status colors
-val StatusPendiente = Color(0xFF1565C0)
-val StatusRealizado = Color(0xFF2E7D32)
-val StatusVencido   = Color(0xFFC62828)
+val Blue40 = NeonViolet
+val Amber40 = NeonMagenta
+val BlueGrey40 = NeonGreen
 
-val StatusPendienteContainer = Color(0xFFDCEEFC)
-val StatusRealizadoContainer = Color(0xFFDCEEDD)
-val StatusVencidoContainer   = Color(0xFFFFE5E5)
+val BackgroundLight = DeepSpace
+val SurfaceLight = SurfaceDark
+val SurfaceVariantLight = SurfaceVariantDark
+
+// Header gradient
+val GradientStart = NeonViolet
+val GradientEnd = NeonCyan
+
+// Status colors (neon tints, foreground use only)
+val StatusPendiente = NeonCyan
+val StatusRealizado = NeonGreen
+val StatusVencido   = NeonCoral
+
+val StatusPendienteContainer = NeonCyan.copy(alpha = 0.16f)
+val StatusRealizadoContainer = NeonGreen.copy(alpha = 0.16f)
+val StatusVencidoContainer   = NeonCoral.copy(alpha = 0.16f)
