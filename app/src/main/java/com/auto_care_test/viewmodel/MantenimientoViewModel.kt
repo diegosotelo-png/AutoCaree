@@ -34,8 +34,13 @@ class MantenimientoViewModel(private val repository: AutoCareRepository) : ViewM
     fun cargarMantenimientos() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            repository.allMantenimientos.collect { lista ->
-                _uiState.update { it.copy(isLoading = false, mantenimientos = lista) }
+            try {
+                repository.obtenerMantenimientos().collect { lista ->
+                    _uiState.update { it.copy(isLoading = false, mantenimientos = lista) }
+                }
+            } catch (e: IllegalStateException) {
+                // No hay sesión activa todavía; se reintentará tras iniciar sesión.
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }
@@ -43,7 +48,10 @@ class MantenimientoViewModel(private val repository: AutoCareRepository) : ViewM
     fun cargarDetalle(idMantenimiento: Int) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, mensajeError = null) }
-            val mantenimiento = repository.getMantenimientoById(idMantenimiento)
+            // Buscamos primero en la lista ya cargada (Firestore en memoria) y,
+            // como respaldo, en la caché local de Room.
+            val mantenimiento = _uiState.value.mantenimientos.find { it.idMantenimiento == idMantenimiento }
+                ?: repository.getMantenimientoById(idMantenimiento)
             if (mantenimiento != null) {
                 _uiState.update { it.copy(isLoading = false, mantenimientoSeleccionado = mantenimiento) }
                 val vehiculo = repository.getVehiculoById(mantenimiento.idVehiculo)

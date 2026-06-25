@@ -7,16 +7,22 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.auto_care_test.ui.auth.LoginScreen
+import com.auto_care_test.ui.auth.RegisterScreen
 import com.auto_care_test.ui.mantenimiento.DetalleScreen
 import com.auto_care_test.ui.mantenimiento.FormularioScreen
 import com.auto_care_test.ui.mantenimiento.ListaScreen
+import com.auto_care_test.ui.perfil.PerfilScreen
 import com.auto_care_test.ui.resumen.ResumenScreen
 import com.auto_care_test.ui.vehiculo.VehiculosScreen
+import com.auto_care_test.viewmodel.AuthViewModel
 import com.auto_care_test.viewmodel.MantenimientoViewModel
 import com.auto_care_test.viewmodel.VehiculoViewModel
 
@@ -60,22 +66,69 @@ sealed class Screen(val route: String) {
     }
     object Vehiculos : Screen("vehiculos")
     object Resumen : Screen("resumen")
+    object Login : Screen("login")
+    object Register : Screen("register")
+    object Perfil : Screen("perfil")
 }
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
     mantenimientoViewModel: MantenimientoViewModel,
-    vehiculoViewModel: VehiculoViewModel
+    vehiculoViewModel: VehiculoViewModel,
+    authViewModel: AuthViewModel
 ) {
+    val authState by authViewModel.uiState.collectAsState()
+    val startDestination = if (authState.isLoggedIn) Screen.Lista.route else Screen.Login.route
+
     NavHost(
         navController = navController,
-        startDestination = Screen.Lista.route,
+        startDestination = startDestination,
         enterTransition = enterTransition,
         exitTransition = exitTransition,
         popEnterTransition = popEnterTransition,
         popExitTransition = popExitTransition
     ) {
+        composable(Screen.Login.route) {
+            LoginScreen(
+                viewModel = authViewModel,
+                onLoginSuccess = {
+                    mantenimientoViewModel.cargarMantenimientos()
+                    vehiculoViewModel.cargarVehiculos()
+                    navController.navigate(Screen.Lista.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onNavigateToRegister = { navController.navigate(Screen.Register.route) }
+            )
+        }
+        composable(Screen.Register.route) {
+            RegisterScreen(
+                viewModel = authViewModel,
+                onRegisterSuccess = {
+                    mantenimientoViewModel.cargarMantenimientos()
+                    vehiculoViewModel.cargarVehiculos()
+                    navController.navigate(Screen.Lista.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onNavigateToLogin = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.Perfil.route) {
+            PerfilScreen(
+                viewModel = authViewModel,
+                vehiculoViewModel = vehiculoViewModel,
+                mantenimientoViewModel = mantenimientoViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToVehiculos = { navController.navigate(Screen.Vehiculos.route) },
+                onLoggedOut = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
         composable(Screen.Lista.route) {
             ListaScreen(
                 viewModel = mantenimientoViewModel,
@@ -83,7 +136,8 @@ fun NavGraph(
                 onNavigateToDetalle = { id -> navController.navigate(Screen.Detalle.createRoute(id)) },
                 onNavigateToFormulario = { id -> navController.navigate(Screen.Formulario.createRoute(id)) },
                 onNavigateToVehiculos = { navController.navigate(Screen.Vehiculos.route) },
-                onNavigateToResumen = { navController.navigate(Screen.Resumen.route) }
+                onNavigateToResumen = { navController.navigate(Screen.Resumen.route) },
+                onNavigateToPerfil = { navController.navigate(Screen.Perfil.route) }
             )
         }
         composable(

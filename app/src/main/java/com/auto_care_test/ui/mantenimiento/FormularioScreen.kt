@@ -7,7 +7,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,10 +19,15 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.auto_care_test.domain.model.Mantenimiento
+import com.auto_care_test.ui.common.TIPOS_MANTENIMIENTO
+import com.auto_care_test.ui.common.TITULO_OTRO
+import com.auto_care_test.ui.common.esTituloPredefinido
 import com.auto_care_test.ui.common.estadoColor
 import com.auto_care_test.ui.common.estadoContainerColor
 import com.auto_care_test.ui.common.formatFecha
+import com.auto_care_test.ui.common.iconoTipoMantenimiento
 import com.auto_care_test.ui.common.pressScale
+import com.auto_care_test.ui.common.titulosPorTipoVehiculo
 import com.auto_care_test.viewmodel.MantenimientoViewModel
 import com.auto_care_test.viewmodel.VehiculoViewModel
 import java.time.Instant
@@ -45,13 +52,19 @@ fun FormularioScreen(
     var recordatorioActivo by remember { mutableStateOf(true) }
     var idVehiculoSeleccionado by remember { mutableStateOf<Int?>(null) }
 
+    var tituloOtro by remember { mutableStateOf(false) } // título escrito a mano
+
     var expandedVehiculo by remember { mutableStateOf(false) }
+    var expandedTitulo by remember { mutableStateOf(false) }
     var expandedTipo by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
 
     val datePickerState = rememberDatePickerState()
-    val tipos = listOf("Preventivo", "Correctivo", "Mejora")
-    val estados = listOf("Pendiente", "Realizado", "Vencido")
+    // "Vencido" ya no se asigna a mano: se calcula automáticamente al pasar la fecha.
+    val estados = listOf("Pendiente", "Realizado")
+
+    val tipoVehiculoSel = vehiculos.find { it.idVehiculo == idVehiculoSeleccionado }?.tipoVehiculo ?: ""
+    val titulosDisponibles = titulosPorTipoVehiculo(tipoVehiculoSel)
 
     LaunchedEffect(idMantenimiento) {
         if (idMantenimiento != null) mantenimientoViewModel.cargarDetalle(idMantenimiento)
@@ -61,10 +74,12 @@ fun FormularioScreen(
         if (idMantenimiento != null) {
             uiState.mantenimientoSeleccionado?.let { m ->
                 titulo = m.titulo
+                tituloOtro = m.titulo.isNotBlank() && !esTituloPredefinido(m.titulo)
                 descripcion = m.descripcion
                 tipoMantenimiento = m.tipoMantenimiento
                 fechaProgramada = m.fechaProgramada
-                estado = m.estado
+                // "Vencido" antiguo se trata como "Pendiente" (ahora es automático)
+                estado = if (m.estado == "Vencido") "Pendiente" else m.estado
                 recordatorioActivo = m.recordatorioActivo
                 idVehiculoSeleccionado = m.idVehiculo
             }
@@ -180,13 +195,72 @@ fun FormularioScreen(
 
             // Sección: Detalles
             FormSection(title = "Detalles del mantenimiento") {
-                OutlinedTextField(
-                    value = titulo,
-                    onValueChange = { titulo = it },
-                    label = { Text("Título") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+                // Título: selector de mantenimientos comunes según el vehículo
+                when {
+                    idVehiculoSeleccionado == null -> {
+                        OutlinedTextField(
+                            value = "",
+                            onValueChange = {},
+                            enabled = false,
+                            readOnly = true,
+                            label = { Text("Título") },
+                            placeholder = { Text("Selecciona primero el vehículo") },
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    tituloOtro -> {
+                        OutlinedTextField(
+                            value = titulo,
+                            onValueChange = { titulo = it },
+                            label = { Text("Título") },
+                            placeholder = { Text("Escribe el mantenimiento") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(14.dp),
+                            trailingIcon = {
+                                IconButton(onClick = { tituloOtro = false; titulo = "" }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Elegir de la lista")
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    else -> {
+                        ExposedDropdownMenuBox(
+                            expanded = expandedTitulo,
+                            onExpandedChange = { expandedTitulo = it }
+                        ) {
+                            OutlinedTextField(
+                                value = titulo,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Título") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandedTitulo) },
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier
+                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                    .fillMaxWidth()
+                            )
+                            ExposedDropdownMenu(
+                                expanded = expandedTitulo,
+                                onDismissRequest = { expandedTitulo = false }
+                            ) {
+                                titulosDisponibles.forEach { t ->
+                                    DropdownMenuItem(
+                                        text = { Text(t) },
+                                        onClick = { titulo = t; expandedTitulo = false }
+                                    )
+                                }
+                                HorizontalDivider()
+                                DropdownMenuItem(
+                                    text = { Text(TITULO_OTRO, fontWeight = FontWeight.SemiBold) },
+                                    leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+                                    onClick = { tituloOtro = true; titulo = ""; expandedTitulo = false }
+                                )
+                            }
+                        }
+                    }
+                }
                 OutlinedTextField(
                     value = descripcion,
                     onValueChange = { descripcion = it },
@@ -204,7 +278,17 @@ fun FormularioScreen(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Tipo de mantenimiento") },
+                        leadingIcon = if (tipoMantenimiento.isNotBlank()) {
+                            {
+                                Icon(
+                                    iconoTipoMantenimiento(tipoMantenimiento),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        } else null,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandedTipo) },
+                        shape = RoundedCornerShape(14.dp),
                         modifier = Modifier
                             .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth()
@@ -213,10 +297,20 @@ fun FormularioScreen(
                         expanded = expandedTipo,
                         onDismissRequest = { expandedTipo = false }
                     ) {
-                        tipos.forEach { t ->
+                        TIPOS_MANTENIMIENTO.forEach { opcion ->
                             DropdownMenuItem(
-                                text = { Text(t) },
-                                onClick = { tipoMantenimiento = t; expandedTipo = false }
+                                text = { Text(opcion.nombre) },
+                                leadingIcon = {
+                                    Icon(
+                                        opcion.icono,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                },
+                                onClick = {
+                                    tipoMantenimiento = opcion.nombre
+                                    expandedTipo = false
+                                }
                             )
                         }
                     }
@@ -263,6 +357,11 @@ fun FormularioScreen(
                         )
                     }
                 }
+                Text(
+                    "El estado «Vencido» se marca solo cuando pasa la fecha programada.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

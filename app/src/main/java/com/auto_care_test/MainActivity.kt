@@ -13,6 +13,7 @@ import com.auto_care_test.data.remote.api.RetrofitClient
 import com.auto_care_test.data.repository.AutoCareRepository
 import com.auto_care_test.ui.navigation.NavGraph
 import com.auto_care_test.ui.theme.AutocaretestTheme
+import com.auto_care_test.viewmodel.AuthViewModel
 import com.auto_care_test.viewmodel.MantenimientoViewModel
 import com.auto_care_test.viewmodel.VehiculoViewModel
 
@@ -37,8 +38,10 @@ class MainActivity : ComponentActivity() {
                 return when {
                     modelClass.isAssignableFrom(MantenimientoViewModel::class.java) -> 
                         MantenimientoViewModel(repository) as T
-                    modelClass.isAssignableFrom(VehiculoViewModel::class.java) -> 
+                    modelClass.isAssignableFrom(VehiculoViewModel::class.java) ->
                         VehiculoViewModel(repository) as T
+                    modelClass.isAssignableFrom(AuthViewModel::class.java) ->
+                        AuthViewModel() as T
                     else -> throw IllegalArgumentException("Unknown ViewModel class")
                 }
             }
@@ -52,12 +55,14 @@ class MainActivity : ComponentActivity() {
                 // 4. Obtención de ViewModels usando el Factory
                 val mantenimientoViewModel: MantenimientoViewModel = viewModel(factory = viewModelFactory)
                 val vehiculoViewModel: VehiculoViewModel = viewModel(factory = viewModelFactory)
+                val authViewModel: AuthViewModel = viewModel(factory = viewModelFactory)
 
                 // 5. Configuración de la Navegación
                 NavGraph(
                     navController = navController,
                     mantenimientoViewModel = mantenimientoViewModel,
-                    vehiculoViewModel = vehiculoViewModel
+                    vehiculoViewModel = vehiculoViewModel,
+                    authViewModel = authViewModel
                 )
             }
         }

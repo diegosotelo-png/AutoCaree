@@ -15,13 +15,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -29,6 +31,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -38,6 +41,7 @@ import com.auto_care_test.domain.model.Mantenimiento
 import com.auto_care_test.ui.common.HeaderGradient
 import com.auto_care_test.ui.common.StatusChip
 import com.auto_care_test.ui.common.estadoColor
+import com.auto_care_test.ui.common.estadoEfectivo
 import com.auto_care_test.ui.common.formatFecha
 import com.auto_care_test.ui.common.ShimmerBox
 import com.auto_care_test.ui.common.iconoTipoMantenimiento
@@ -54,17 +58,18 @@ fun ListaScreen(
     onNavigateToDetalle: (Int) -> Unit,
     onNavigateToFormulario: (Int?) -> Unit,
     onNavigateToVehiculos: () -> Unit,
-    onNavigateToResumen: () -> Unit
+    onNavigateToResumen: () -> Unit,
+    onNavigateToPerfil: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val vehiculos by vehiculoViewModel.vehiculos.collectAsState()
     var filtro by remember { mutableStateOf("Todos") }
     val filtros = listOf("Todos", "Pendiente", "Realizado", "Vencido")
     val lista = if (filtro == "Todos") uiState.mantenimientos
-                else uiState.mantenimientos.filter { it.estado == filtro }
+                else uiState.mantenimientos.filter { estadoEfectivo(it.estado, it.fechaProgramada) == filtro }
 
-    val pendientes = uiState.mantenimientos.count { it.estado == "Pendiente" }
-    val vencidos = uiState.mantenimientos.count { it.estado == "Vencido" }
+    val pendientes = uiState.mantenimientos.count { estadoEfectivo(it.estado, it.fechaProgramada) == "Pendiente" }
+    val vencidos = uiState.mantenimientos.count { estadoEfectivo(it.estado, it.fechaProgramada) == "Vencido" }
     val saludo = remember {
         when (LocalTime.now().hour) {
             in 5..11 -> "¡Buenos días!"
@@ -104,10 +109,19 @@ fun ListaScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(HeaderGradient)
-                        .padding(20.dp)
+                        .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    com.auto_care_test.ui.theme.GradientStart,
+                                    com.auto_care_test.ui.theme.GradientEnd,
+                                    MaterialTheme.colorScheme.background
+                                )
+                            )
+                        )
+                        .padding(horizontal = 20.dp, vertical = 24.dp)
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -117,32 +131,36 @@ fun ListaScreen(
                                 Text(
                                     saludo,
                                     style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.92f)
                                 )
+                                Spacer(Modifier.height(2.dp))
                                 Text(
                                     "Tu Auto Care",
                                     style = MaterialTheme.typography.displaySmall,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = MaterialTheme.colorScheme.onPrimary
                                 )
+                                Spacer(Modifier.height(2.dp))
                                 Text(
                                     "${uiState.mantenimientos.size} mantenimientos registrados",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.88f)
                                 )
                             }
                             Box(
                                 modifier = Modifier
-                                    .size(56.dp)
+                                    .size(48.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
+                                    .border(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.4f), CircleShape)
+                                    .background(Color.Black.copy(alpha = 0.12f))
+                                    .clickable { onNavigateToPerfil() },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    Icons.AutoMirrored.Filled.TrendingUp,
-                                    contentDescription = null,
+                                    Icons.Default.Person,
+                                    contentDescription = "Perfil",
                                     tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(28.dp)
+                                    modifier = Modifier.size(22.dp)
                                 )
                             }
                         }
@@ -152,7 +170,7 @@ fun ListaScreen(
                             HeroPill(Icons.Default.Warning, "$vencidos vencidos")
                         }
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             QuickActionCard(
                                 modifier = Modifier.weight(1f),
                                 icon = Icons.Default.DirectionsCar,
@@ -251,13 +269,14 @@ private fun HeroPill(icon: androidx.compose.ui.graphics.vector.ImageVector, text
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.16f))
+            .border(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.35f), RoundedCornerShape(50))
+            .background(Color.Black.copy(alpha = 0.10f))
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onPrimary)
-        Text(text, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimary)
+        Icon(icon, contentDescription = null, modifier = Modifier.size(13.dp), tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f))
+        Text(text, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f))
     }
 }
 
@@ -278,21 +297,22 @@ private fun QuickActionCard(
         },
         modifier = modifier.pressScale(interaction),
         interactionSource = interaction,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.14f))
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.16f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f))
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 14.dp, vertical = 12.dp)
+                .padding(horizontal = 14.dp, vertical = 14.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(11.dp))
+                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
@@ -308,15 +328,15 @@ private fun QuickActionCard(
                     Text(
                         subtitle,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f)
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
                     )
                 }
             }
             Icon(
                 Icons.AutoMirrored.Filled.ArrowForwardIos,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
-                modifier = Modifier.size(13.dp)
+                tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.55f),
+                modifier = Modifier.size(12.dp)
             )
         }
     }
@@ -363,8 +383,13 @@ private fun EmptyListState() {
 }
 
 @Composable
-fun MantenimientoListCard(m: Mantenimiento, vehiculoTexto: String? = null, onClick: () -> Unit) {
-    val statusColor = estadoColor(m.estado)
+fun MantenimientoListCard(
+    m: Mantenimiento,
+    vehiculoTexto: String? = null,
+    onClick: () -> Unit
+) {
+    val estadoEff = estadoEfectivo(m.estado, m.fechaProgramada)
+    val statusColor = estadoColor(estadoEff)
     val haptics = LocalHapticFeedback.current
     val interaction = remember { MutableInteractionSource() }
     Card(
@@ -416,7 +441,7 @@ fun MantenimientoListCard(m: Mantenimiento, vehiculoTexto: String? = null, onCli
                             .weight(1f)
                             .padding(end = 8.dp)
                     )
-                    StatusChip(m.estado)
+                    StatusChip(estadoEff)
                 }
                 if (!vehiculoTexto.isNullOrBlank()) {
                     Spacer(Modifier.height(4.dp))

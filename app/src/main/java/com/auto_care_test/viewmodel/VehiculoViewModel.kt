@@ -28,8 +28,13 @@ class VehiculoViewModel(private val repository: AutoCareRepository) : ViewModel(
     fun cargarVehiculos() {
         viewModelScope.launch {
             _isLoading.value = true
-            repository.allVehiculos.collect { lista ->
-                _vehiculos.value = lista
+            try {
+                repository.obtenerVehiculos().collect { lista ->
+                    _vehiculos.value = lista
+                    _isLoading.value = false
+                }
+            } catch (e: IllegalStateException) {
+                // No hay sesión activa todavía; se reintentará tras iniciar sesión.
                 _isLoading.value = false
             }
         }

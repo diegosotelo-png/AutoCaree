@@ -1,68 +1,70 @@
 package com.auto_care_test.ui.theme
 
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Blue40,
-    secondary = Amber40,
-    tertiary = BlueGrey40,
-    background = BackgroundLight,
-    surface = SurfaceLight,
-    surfaceVariant = SurfaceVariantLight,
-    primaryContainer = SurfaceVariantLight,
+// Esquema CLARO bien definido: azul de marca + ámbar de acento sobre neutros claros.
+private val AutoCareLightScheme = lightColorScheme(
+    primary = AutoBlue,
     onPrimary = Color.White,
+    primaryContainer = LightPrimaryContainer,
+    onPrimaryContainer = AutoBlueDeep,
+    secondary = AutoAmber,
     onSecondary = Color.White,
+    secondaryContainer = Color(0xFFFFE3C2),
+    onSecondaryContainer = Color(0xFF6B3B00),
+    tertiary = StatusPendiente,
     onTertiary = Color.White,
-    onBackground = OnDark,
-    onSurface = OnDark,
-    onSurfaceVariant = OnDarkMuted,
-    outline = OutlineDark,
-    error = NeonCoral,
-    onError = Color.White
+    background = LightBackground,
+    onBackground = LightOnSurface,
+    surface = LightSurface,
+    onSurface = LightOnSurface,
+    surfaceVariant = LightSurfaceVariant,
+    onSurfaceVariant = LightOnSurfaceMuted,
+    outline = LightOutline,
+    error = StatusVencido,
+    onError = Color.White,
+    errorContainer = Color(0xFFFDECEC),
+    onErrorContainer = Color(0xFF8A1212)
 )
 
-// La app usa una identidad futurista neon-sobre-oscuro siempre,
-// independiente del tema del sistema.
-private val LightColorScheme = darkColorScheme(
-    primary = Blue40,
-    secondary = Amber40,
-    tertiary = BlueGrey40,
-    background = BackgroundLight,
-    surface = SurfaceLight,
-    surfaceVariant = SurfaceVariantLight,
-    primaryContainer = SurfaceVariantLight,
+// Esquema OSCURO (navy): mismo lenguaje de marca adaptado a fondo oscuro.
+private val AutoCareDarkScheme = darkColorScheme(
+    primary = AutoBlueBright,
     onPrimary = Color.White,
-    onSecondary = Color.White,
+    primaryContainer = DarkPrimaryContainer,
+    onPrimaryContainer = Color(0xFFBBD4F0),
+    secondary = AutoAmberLight,
+    onSecondary = Color(0xFF231400),
+    secondaryContainer = Color(0xFF3A2A0A),
+    onSecondaryContainer = Color(0xFFFFE0B2),
+    tertiary = StatusPendiente,
     onTertiary = Color.White,
-    onBackground = OnDark,
-    onSurface = OnDark,
-    onSurfaceVariant = OnDarkMuted,
-    outline = OutlineDark,
-    error = NeonCoral,
-    onError = Color.White
+    background = DarkBackground,
+    onBackground = DarkOnSurface,
+    surface = DarkSurface,
+    onSurface = DarkOnSurface,
+    surfaceVariant = DarkSurfaceVariant,
+    onSurfaceVariant = DarkOnSurfaceMuted,
+    outline = DarkOutline,
+    error = Color(0xFFFF6B6B),
+    onError = Color(0xFF2A0A0A),
+    errorContainer = Color(0xFF3A1414),
+    onErrorContainer = Color(0xFFFFB4B4)
 )
 
 @Composable
 fun AutocaretestTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    // AutoCare usa siempre su identidad oscura (navy) para un look premium,
+    // independiente del tema del sistema. El esquema claro queda disponible
+    // por si se quiere ofrecer como opción.
+    darkTheme: Boolean = true,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = if (darkTheme) AutoCareDarkScheme else AutoCareLightScheme
     MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
 }

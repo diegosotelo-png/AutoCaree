@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface VehiculoDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(vehiculo: VehiculoEntity)
+    suspend fun insert(vehiculo: VehiculoEntity): Long
 
     @Query("SELECT * FROM vehiculos")
     fun getAll(): Flow<List<VehiculoEntity>>

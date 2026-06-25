@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.auto_care_test" />
+                  <option name="mobileSdkAppId" value="1:518641552414:android:e526c81df4b402335a320f" />
+                  <option name="projectId" value="autocare-f3c41" />
+                  <option name="projectNumber" value="518641552414" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
