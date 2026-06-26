@@ -33,7 +33,9 @@ class FirestoreDataSource(
 
         val listener = ref.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                close(error)
+                // No propagamos el error (p. ej. PERMISSION_DENIED al cerrar sesión):
+                // cerramos el flujo de forma normal para no crashear la app.
+                close()
                 return@addSnapshotListener
             }
             val vehiculos = snapshot?.documents?.mapNotNull { it.toObject(Vehiculo::class.java) } ?: emptyList()
@@ -68,7 +70,8 @@ class FirestoreDataSource(
 
         val listener = ref.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                close(error)
+                // No propagamos el error (p. ej. PERMISSION_DENIED al cerrar sesión).
+                close()
                 return@addSnapshotListener
             }
             val mantenimientos = snapshot?.documents?.mapNotNull { it.toObject(Mantenimiento::class.java) } ?: emptyList()

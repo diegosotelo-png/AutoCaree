@@ -38,9 +38,9 @@ class MantenimientoViewModel(private val repository: AutoCareRepository) : ViewM
                 repository.obtenerMantenimientos().collect { lista ->
                     _uiState.update { it.copy(isLoading = false, mantenimientos = lista) }
                 }
-            } catch (e: IllegalStateException) {
-                // No hay sesión activa todavía; se reintentará tras iniciar sesión.
-                _uiState.update { it.copy(isLoading = false) }
+            } catch (e: Exception) {
+                // Sin sesión o error de Firestore (p. ej. al cerrar sesión): no crashear.
+                _uiState.update { it.copy(isLoading = false, mantenimientos = emptyList()) }
             }
         }
     }
@@ -65,11 +65,16 @@ class MantenimientoViewModel(private val repository: AutoCareRepository) : ViewM
         }
     }
 
-    fun guardarMantenimiento(m: Mantenimiento) {
+    /**
+     * Guarda un mantenimiento nuevo y entrega el ID generado por Room mediante [onGuardado],
+     * para que la UI pueda programar el recordatorio con el ID real.
+     */
+    fun guardarMantenimiento(m: Mantenimiento, onGuardado: (Int) -> Unit = {}) {
         viewModelScope.launch {
             try {
-                repository.insertMantenimiento(m)
+                val nuevoId = repository.insertMantenimiento(m)
                 _uiState.update { it.copy(guardadoExitoso = true) }
+                onGuardado(nuevoId)
             } catch (e: Exception) {
                 _uiState.update { it.copy(mensajeError = "Error al guardar") }
             }

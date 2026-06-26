@@ -15,10 +15,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.auto_care_test.domain.model.Mantenimiento
+import com.auto_care_test.notification.RecordatorioWorker
 import com.auto_care_test.ui.common.TIPOS_MANTENIMIENTO
 import com.auto_care_test.ui.common.TITULO_OTRO
 import com.auto_care_test.ui.common.esTituloPredefinido
@@ -31,7 +36,10 @@ import com.auto_care_test.ui.common.titulosPorTipoVehiculo
 import com.auto_care_test.viewmodel.MantenimientoViewModel
 import com.auto_care_test.viewmodel.VehiculoViewModel
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import java.time.ZoneOffset
+import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +51,7 @@ fun FormularioScreen(
 ) {
     val uiState by mantenimientoViewModel.uiState.collectAsState()
     val vehiculos by vehiculoViewModel.vehiculos.collectAsState()
+    val context = LocalContext.current
 
     var titulo by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
@@ -399,8 +408,30 @@ fun FormularioScreen(
                             recordatorioActivo = recordatorioActivo
                         )
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        if (idMantenimiento == null) mantenimientoViewModel.guardarMantenimiento(m)
-                        else mantenimientoViewModel.editarMantenimiento(m)
+                        if (idMantenimiento == null) {
+                            // Nuevo: esperamos el ID real generado por Room para el recordatorio
+                            mantenimientoViewModel.guardarMantenimiento(m) { nuevoId ->
+                                if (recordatorioActivo) {
+                                    programarRecordatorio(
+                                        context = context,
+                                        titulo = m.titulo,
+                                        idMantenimiento = nuevoId,
+                                        fechaProgramada = m.fechaProgramada
+                                    )
+                                }
+                            }
+                        } else {
+                            // Edición: el ID ya se conoce
+                            mantenimientoViewModel.editarMantenimiento(m)
+                            if (recordatorioActivo) {
+                                programarRecordatorio(
+                                    context = context,
+                                    titulo = m.titulo,
+                                    idMantenimiento = m.idMantenimiento,
+                                    fechaProgramada = m.fechaProgramada
+                                )
+                            }
+                        }
                     }
                 },
                 modifier = Modifier
@@ -449,4 +480,47 @@ private fun FormSection(title: String, content: @Composable () -> Unit) {
             content()
         }
     }
+}
+
+/**
+ * Programa un OneTimeWorkRequest que disparará el recordatorio en la fecha indicada.
+ * El delay se calcula desde ahora hasta el inicio del día de [fechaProgramada];
+ * si la fecha ya pasó (o es hoy) se dispara cuanto antes.
+ */
+private fun programarRecordatorio(
+    context: android.content.Context,
+    titulo: String,
+    idMantenimiento: Int,
+    fechaProgramada: String
+) {
+    // Para poder probar HOY sin esperar: si la fecha es hoy o ya pasó,
+    // la notificación se dispara en 10 segundos. Si es futura, delay exacto.
+    val pruebaMillis = 10_000L
+    val delayMillis = try {
+        val fecha = LocalDate.parse(fechaProgramada)
+        val hoy = LocalDate.now()
+        if (!fecha.isAfter(hoy)) {
+            pruebaMillis
+        } else {
+            val triggerMillis = fecha
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+            (triggerMillis - System.currentTimeMillis()).coerceAtLeast(pruebaMillis)
+        }
+    } catch (e: Exception) {
+        pruebaMillis
+    }
+
+    val datos = workDataOf(
+        RecordatorioWorker.KEY_TITULO to titulo,
+        RecordatorioWorker.KEY_ID_MANTENIMIENTO to idMantenimiento
+    )
+
+    val request = OneTimeWorkRequestBuilder<RecordatorioWorker>()
+        .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
+        .setInputData(datos)
+        .build()
+
+    WorkManager.getInstance(context).enqueue(request)
 }

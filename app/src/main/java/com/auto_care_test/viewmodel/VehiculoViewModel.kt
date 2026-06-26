@@ -33,8 +33,9 @@ class VehiculoViewModel(private val repository: AutoCareRepository) : ViewModel(
                     _vehiculos.value = lista
                     _isLoading.value = false
                 }
-            } catch (e: IllegalStateException) {
-                // No hay sesión activa todavía; se reintentará tras iniciar sesión.
+            } catch (e: Exception) {
+                // Sin sesión o error de Firestore (p. ej. al cerrar sesión): no crashear.
+                _vehiculos.value = emptyList()
                 _isLoading.value = false
             }
         }

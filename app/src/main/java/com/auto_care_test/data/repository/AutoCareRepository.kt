@@ -59,11 +59,13 @@ class AutoCareRepository(
         }
     }
 
-    suspend fun insertMantenimiento(mantenimiento: Mantenimiento) {
+    /** Inserta el mantenimiento y devuelve el ID generado por Room. */
+    suspend fun insertMantenimiento(mantenimiento: Mantenimiento): Int {
         val uid = uidActual()
         val idGenerado = mantenimientoDao.insert(mantenimiento.toEntity()).toInt()
         val mantenimientoConId = mantenimiento.copy(idMantenimiento = idGenerado)
         firestoreDataSource.agregarMantenimiento(uid, mantenimientoConId)
+        return idGenerado
     }
 
     suspend fun updateMantenimiento(mantenimiento: Mantenimiento) {

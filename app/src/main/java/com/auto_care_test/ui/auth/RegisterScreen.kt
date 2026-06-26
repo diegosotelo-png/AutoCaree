@@ -49,7 +49,9 @@ fun RegisterScreen(
     var nombre by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmarPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var confirmarVisible by remember { mutableStateOf(false) }
     var camposVaciosError by remember { mutableStateOf<String?>(null) }
     var visible by remember { mutableStateOf(false) }
 
@@ -183,6 +185,29 @@ fun RegisterScreen(
                                 modifier = Modifier.fillMaxWidth()
                             )
 
+                            OutlinedTextField(
+                                value = confirmarPassword,
+                                onValueChange = { confirmarPassword = it; camposVaciosError = null },
+                                label = { Text("Confirmar contraseña") },
+                                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                                singleLine = true,
+                                isError = confirmarPassword.isNotEmpty() && confirmarPassword != password,
+                                visualTransformation = if (confirmarVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                trailingIcon = {
+                                    val icon: ImageVector =
+                                        if (confirmarVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
+                                    IconButton(onClick = { confirmarVisible = !confirmarVisible }) {
+                                        Icon(icon, contentDescription = null)
+                                    }
+                                },
+                                supportingText = if (confirmarPassword.isNotEmpty() && confirmarPassword != password) {
+                                    { Text("Las contraseñas no coinciden", color = MaterialTheme.colorScheme.error) }
+                                } else null,
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
                             AnimatedVisibility(visible = errorMostrado != null) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -213,6 +238,8 @@ fun RegisterScreen(
                                         nombre.isBlank() -> "El nombre no puede estar vacío"
                                         email.isBlank() -> "El correo no puede estar vacío"
                                         password.isBlank() -> "La contraseña no puede estar vacía"
+                                        confirmarPassword.isBlank() -> "Confirma tu contraseña"
+                                        password != confirmarPassword -> "Las contraseñas no coinciden"
                                         else -> null
                                     }
                                     if (camposVaciosError == null) {
